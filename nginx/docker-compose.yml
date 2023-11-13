@@ -3,10 +3,10 @@ version: '3'
 services:
   nginx:
     image: nginx:1.19-alpine
-    container_name: n1
+    container_name: nginx
     restart: unless-stopped
     volumes:
-      - ./data/nginx/setup/app.conf.template:/etc/nginx/conf.d/app.conf.template
+      - ./setup/app.conf.template:/etc/nginx/conf.d/app.conf.template
       - /etc/letsencrypt:/etc/letsencrypt
       - /var/www/cerbot:/var/www/certbot
     ports:
