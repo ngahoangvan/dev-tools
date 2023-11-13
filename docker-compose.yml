@@ -1,0 +1,104 @@
+version: "3"
+
+services:
+  code-server:
+    image: ngahoang/code-server:v1
+    build: 
+      context: code-server
+    container_name: code-server
+    privileged: true
+    environment:
+      - PUID=${PID}
+      - PGID=${PID}
+      - TZ=Etc/UTC
+      - PASSWORD=${CODE_SERVER_PASSWORD}
+      - SUDO_PASSWORD=python #optional
+      - DEFAULT_WORKSPACE=/config/workspace #optional
+    volumes:
+      - ./app:/config/workspace
+    expose:
+      - 8443
+    # ports:
+    #   - 8443:8443
+    restart: always
+
+  jlab:
+    image: ngahoang/jupyter-lab:v1
+    build: 
+      context: jupyter-lab
+      args:
+        - NB_USER=${whoami}
+        - NB_UID=${PID}
+    container_name: jlab
+    # volumes:
+    #   - ./app:/config/workspace
+    expose:
+      - 8888
+    ports:
+      - 8888:8888
+    restart: always
+  
+  # apm-server:
+  #   image: docker.elastic.co/apm/apm-server:7.10.1
+  #   cap_add: [ "CHOWN", "DAC_OVERRIDE", "SETGID", "SETUID" ]
+  #   cap_drop: [ "ALL" ]
+  #   expose:
+  #     - 8200
+  #   command: >
+  #     apm-server -e
+  #       -E apm-server.rum.enabled=true
+  #       -E setup.kibana.host=kibana:5601
+  #       -E setup.template.settings.index.number_of_replicas=0
+  #       -E apm-server.kibana.enabled=true
+  #       -E apm-server.kibana.host=kibana:5601
+  #       -E output.elasticsearch.hosts=["elasticsearch:9200"]
+  #       -E output.elasticsearch.username=elastic
+  #       -E output.elasticsearch.password=${ELASTIC_PASSWORD}
+  #  #    volumes:
+  #  #      - ./apm-server/config/apm-server.yml:/usr/share/apm-server/apm-server.yml
+ 
+  # elasticsearch:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
+  #   environment:
+  #     - bootstrap.memory_lock=true
+  #     - cluster.name=docker-cluster
+  #     - cluster.routing.allocation.disk.threshold_enabled=false
+  #     - discovery.type=single-node
+  #     - ES_JAVA_OPTS=-XX:UseAVX=2 -Xms1g -Xmx1g
+  #     - xpack.security.enabled=true
+  #     - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+  #   ulimits:
+  #     memlock:
+  #       hard: -1
+  #       soft: -1
+  #   volumes:
+  #     - ./data/esdata:/usr/share/elasticsearch/data
+  #   expose:
+  #     - 9200
+ 
+  # kibana:
+  #   image: docker.elastic.co/kibana/kibana:7.10.1
+  #   environment:
+  #     ELASTICSEARCH_URL: http://elasticsearch:9200
+  #     ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+  #     SERVER_BASEPATH: /kibana
+  #     ELASTICSEARCH_USERNAME: elastic
+  #     ELASTICSEARCH_PASSWORD: ${ELASTIC_PASSWORD}
+  #   expose:
+  #     - 5601
+
+  # nginx:
+  #   container_name: n1
+  #   image: nginx:1.21.3-alpine
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ./nginx/conf.d/:/etc/nginx/conf.d/
+  #     - ./nginx/htpasswd/pwdfile:/etc/nginx/pwdfile
+  #     - /etc/letsencrypt:/etc/letsencrypt
+  #     - /var/www/certbot:/var/www/certbot
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   environment:
+  #     - DOMAIN_NAME=${DOMAIN_NAME}
+  #   command: /bin/sh -c "while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g 'daemon off;'"
