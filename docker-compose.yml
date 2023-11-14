@@ -8,35 +8,32 @@ services:
     container_name: code-server
     privileged: true
     environment:
-      - PUID=${PID}
-      - PGID=${PID}
+      - PUID=${PUID}
+      - PGID=${PGID}
       - TZ=Etc/UTC
       - PASSWORD=${CODE_SERVER_PASSWORD}
       - SUDO_PASSWORD=python #optional
       - DEFAULT_WORKSPACE=/config/workspace #optional
     volumes:
       - ./app:/config/workspace
+      - ./code-server/extensions:/config/extensions
     expose:
       - 8443
-    # ports:
-    #   - 8443:8443
+#    ports:
+#      - 8443:8443
     restart: always
 
   jlab:
     image: ngahoang/jupyter-lab:v1
     build: 
       context: jupyter-lab
-      args:
-        - NB_USER=${whoami}
-        - NB_UID=${PID}
     container_name: jlab
-    # volumes:
-    #   - ./app:/config/workspace
+    volumes:
+      - ./labs:/home/jovyan/work/
     expose:
       - 8888
-    ports:
-      - 8888:8888
     restart: always
+    command: jupyter lab --no-browser --LabApp.password='sha256:84d954cc8eb7:af9eee7e1a581b4e0af3673e32b020c4c88505b718d13487d3db855ac216454f'  --LabApp.allow_remote_access='True' --LabApp.allow_origin='*'
   
   # apm-server:
   #   image: docker.elastic.co/apm/apm-server:7.10.1
@@ -87,18 +84,16 @@ services:
   #   expose:
   #     - 5601
 
-  # nginx:
-  #   container_name: n1
-  #   image: nginx:1.21.3-alpine
-  #   restart: unless-stopped
-  #   volumes:
-  #     - ./nginx/conf.d/:/etc/nginx/conf.d/
-  #     - ./nginx/htpasswd/pwdfile:/etc/nginx/pwdfile
-  #     - /etc/letsencrypt:/etc/letsencrypt
-  #     - /var/www/certbot:/var/www/certbot
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   environment:
-  #     - DOMAIN_NAME=${DOMAIN_NAME}
-  #   command: /bin/sh -c "while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g 'daemon off;'"
+  nginx:
+    container_name: nginx
+    image: nginx:1.21.3-alpine
+    restart: unless-stopped
+    volumes:
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
+      - ./nginx/htpasswd/pwdfile:/etc/nginx/pwdfile
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/www/certbot:/var/www/certbot
+    ports:
+      - "80:80"
+      - "443:443"
+    command: /bin/sh -c "while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g 'daemon off;'"
