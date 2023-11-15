@@ -41,6 +41,8 @@ services:
     cap_drop: [ "ALL" ]
     expose:
       - 8200
+    ports:
+      - 8200:8200
     command: >
       apm-server -e
         -E apm-server.rum.enabled=true
@@ -51,9 +53,9 @@ services:
         -E output.elasticsearch.hosts=["elasticsearch:9200"]
         -E output.elasticsearch.username=elastic
         -E output.elasticsearch.password=${ELASTIC_PASSWORD}
-   #    volumes:
-   #      - ./apm-server/config/apm-server.yml:/usr/share/apm-server/apm-server.yml
- 
+    # volumes:
+    #   - ./apm-server/config/apm-server.yml:/usr/share/apm-server/apm-server.yml
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
     environment:
@@ -72,13 +74,12 @@ services:
       - ./data/esdata:/usr/share/elasticsearch/data
     expose:
       - 9200
- 
+
   kibana:
     image: docker.elastic.co/kibana/kibana:7.10.1
     environment:
       ELASTICSEARCH_URL: http://elasticsearch:9200
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-      SERVER_BASEPATH: /kibana
       ELASTICSEARCH_USERNAME: elastic
       ELASTICSEARCH_PASSWORD: ${ELASTIC_PASSWORD}
     expose:
