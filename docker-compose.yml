@@ -53,6 +53,7 @@ services:
         -E output.elasticsearch.hosts=["elasticsearch:9200"]
         -E output.elasticsearch.username=elastic
         -E output.elasticsearch.password=${ELASTIC_PASSWORD}
+        -E apm-server.secret_token=${APM_SECRET_TOKEN}
     # volumes:
     #   - ./apm-server/config/apm-server.yml:/usr/share/apm-server/apm-server.yml
 
@@ -85,16 +86,25 @@ services:
   #   expose:
   #     - 5601
 
-  # nginx:
-  #   container_name: nginx
-  #   image: nginx:1.21.3-alpine
-  #   restart: unless-stopped
-  #   volumes:
-  #     - ./nginx/conf.d/:/etc/nginx/conf.d/
-  #     - ./nginx/htpasswd/pwdfile:/etc/nginx/pwdfile
-  #     - /etc/letsencrypt:/etc/letsencrypt
-  #     - /var/www/certbot:/var/www/certbot
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   command: /bin/sh -c "while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g 'daemon off;'"
+  nginx:
+    container_name: nginx
+    image: nginx:1.21.3-alpine
+    restart: unless-stopped
+    volumes:
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
+      - ./nginx/htpasswd/pwdfile:/etc/nginx/pwdfile
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/www/certbot:/var/www/certbot
+    ports:
+      - "80:80"
+      - "443:443"
+    command: /bin/sh -c "while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g 'daemon off;'"
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    restart: unless-stopped
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/www/cerbot:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
