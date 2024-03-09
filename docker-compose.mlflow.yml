@@ -23,16 +23,20 @@ services:
 
   minio:
     restart: always
-    image: minio/minio
+    image: minio/minio:${MINIO_VERSION:-latest}
     container_name: mlflow_minio
     volumes:
       - ./data/mlflow/minio_data:/data
-    ports:
-      - "9000:9000"
-      - "9001:9001"
+      # - /etc/letsencrypt/live/jhoangv.com/fullchain.pem:/home/user/.minio/certs/public.crt
+      # - /etc/letsencrypt/live/jhoangv.com/privkey.pem:/home/user/.minio/certs/private.key
+    expose:
+      - 9000
+      - 9001
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - MINIO_SERVER_URL=${MINIO_SERVER_URL}
+      - MINIO_BROWSER_REDIRECT_URI=${MINIO_BROWSER_REDIRECT_URI}
     command: server /data --console-address ":9001"
     # healthcheck:
     #   test: ["CMD", "curl", "-f", "http://localhost:9001/minio/health/live"]
