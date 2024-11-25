@@ -19,8 +19,6 @@ services:
       - ./code-server/extensions:/config/extensions
     expose:
       - 8443
-#    ports:
-#      - 8443:8443
     restart: always
 
   jlab:
@@ -34,57 +32,6 @@ services:
       - 8888
     restart: always
     command: jupyter lab --no-browser --LabApp.password='sha256:84d954cc8eb7:af9eee7e1a581b4e0af3673e32b020c4c88505b718d13487d3db855ac216454f'  --LabApp.allow_remote_access='True' --LabApp.allow_origin='*'
-  
-  apm-server:
-    image: docker.elastic.co/apm/apm-server:7.10.1
-    cap_add: [ "CHOWN", "DAC_OVERRIDE", "SETGID", "SETUID" ]
-    cap_drop: [ "ALL" ]
-    expose:
-      - 8200
-    ports:
-      - 8200:8200
-    command: >
-      apm-server -e
-        -E apm-server.rum.enabled=true
-        -E setup.kibana.host=kibana:5601
-        -E setup.template.settings.index.number_of_replicas=0
-        -E apm-server.kibana.enabled=true
-        -E apm-server.kibana.host=kibana:5601
-        -E output.elasticsearch.hosts=["elasticsearch:9200"]
-        -E output.elasticsearch.username=elastic
-        -E output.elasticsearch.password=${ELASTIC_PASSWORD}
-        -E apm-server.secret_token=${APM_SECRET_TOKEN}
-    # volumes:
-    #   - ./apm-server/config/apm-server.yml:/usr/share/apm-server/apm-server.yml
-
-  # elasticsearch:
-  #   image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
-  #   environment:
-  #     - bootstrap.memory_lock=true
-  #     - cluster.name=docker-cluster
-  #     - cluster.routing.allocation.disk.threshold_enabled=false
-  #     - discovery.type=single-node
-  #     - ES_JAVA_OPTS=-XX:UseAVX=2 -Xms1g -Xmx1g
-  #     - xpack.security.enabled=true
-  #     - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-  #   ulimits:
-  #     memlock:
-  #       hard: -1
-  #       soft: -1
-  #   volumes:
-  #     - ./data/esdata:/usr/share/elasticsearch/data
-  #   expose:
-  #     - 9200
-
-  # kibana:
-  #   image: docker.elastic.co/kibana/kibana:7.10.1
-  #   environment:
-  #     ELASTICSEARCH_URL: http://elasticsearch:9200
-  #     ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-  #     ELASTICSEARCH_USERNAME: elastic
-  #     ELASTICSEARCH_PASSWORD: ${ELASTIC_PASSWORD}
-  #   expose:
-  #     - 5601
 
   nginx:
     container_name: nginx
