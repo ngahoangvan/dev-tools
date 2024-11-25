@@ -1,0 +1,209 @@
+
+version: '3.8'
+
+services:
+  kafka1:
+    image: confluentinc/cp-kafka:7.4.0
+    hostname: kafka1
+    container_name: kafka1
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka1:29093,2@kafka2:29094,3@kafka3:29095'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENERS: 'PLAINTEXT://kafka1:29092,CONTROLLER://kafka1:29093,EXTERNAL://0.0.0.0:9092'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka1:29092,EXTERNAL://localhost:9092'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      CLUSTER_ID: 'qLNrjzDoT1-E-pjzCqeG9A'
+    healthcheck:
+      test: nc -z localhost 9092 || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - kafka-net
+
+  kafka2:
+    image: confluentinc/cp-kafka:7.4.0
+    hostname: kafka2
+    container_name: kafka2
+    ports:
+      - "9093:9093"
+      - "29093:29093"
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_NODE_ID: 2
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka1:29093,2@kafka2:29094,3@kafka3:29095'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENERS: 'PLAINTEXT://kafka2:29093,CONTROLLER://kafka2:29094,EXTERNAL://0.0.0.0:9093'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka2:29093,EXTERNAL://localhost:9093'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      CLUSTER_ID: 'qLNrjzDoT1-E-pjzCqeG9A'
+    healthcheck:
+      test: nc -z localhost 9093 || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - kafka-net
+
+  kafka3:
+    image: confluentinc/cp-kafka:7.4.0
+    hostname: kafka3
+    container_name: kafka3
+    ports:
+      - "9094:9094"
+      - "29094:29094"
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_NODE_ID: 3
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka1:29093,2@kafka2:29094,3@kafka3:29095'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENERS: 'PLAINTEXT://kafka3:29094,CONTROLLER://kafka3:29095,EXTERNAL://0.0.0.0:9094'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka3:29094,EXTERNAL://localhost:9094'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      CLUSTER_ID: 'qLNrjzDoT1-E-pjzCqeG9A'
+    healthcheck:
+      test: nc -z localhost 9094 || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - kafka-net
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.4.0
+    hostname: schema-registry
+    container_name: schema-registry
+    depends_on:
+      kafka1:
+        condition: service_healthy
+      kafka2:
+        condition: service_healthy
+      kafka3:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'kafka1:29092,kafka2:29093,kafka3:29094'
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+    healthcheck:
+      test: curl --fail http://localhost:8081 || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - kafka-net
+
+  conduktor-postgres:
+    image: postgres:14
+    container_name: conduktor-postgres
+    environment:
+      POSTGRES_USER: conduktor
+      POSTGRES_PASSWORD: conduktor
+      POSTGRES_DB: conduktor
+    volumes:
+      - ./postgresql_data:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U conduktor -d conduktor
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kafka-net
+  
+  # Conduktor depends on a separate db for storing Kafka data for SQL querying
+  # It is optional, but required if you wish to use SQL functionality
+  # Separate db ensures continued operation of the core Console experience if the SQL db becomes unavailable
+  # https://docs.conduktor.io/platform/guides/configure-sql/
+  # kafkasql-postgres:
+  #   image: postgres:14
+  #   hostname: postgresql-sql
+  #   volumes:
+  #     - ./pg_data_sql:/var/lib/postgresql/data
+  #   environment:
+  #     PGDATA: "/var/lib/postgresql/data"
+  #     POSTGRES_DB: "conduktor-sql"
+  #     POSTGRES_USER: "conduktor"
+  #     POSTGRES_PASSWORD: "change_me"
+  #     POSTGRES_HOST_AUTH_METHOD: "scram-sha-256"
+  #   healthcheck:
+  #     test: pg_isready -U conduktor -d conduktor-sql
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - kafka-net
+
+  conduktor-platform:
+    image: conduktor/conduktor-platform:latest
+    ports:
+      - "8080:8080"
+    environment:
+      CDK_CLUSTERS_0_ID: local
+      CDK_CLUSTERS_0_NAME: local
+      CDK_CLUSTERS_0_BOOTSTRAPSERVERS: kafka1:29092,kafka2:29093,kafka3:29094
+      CDK_CLUSTERS_0_SCHEMAREGISTRY_URL: "http://schema-registry:8081"
+      # PostgreSQL Database Configuration - Fixed URL format
+      CDK_DATABASE_URL: "postgresql://conduktor:conduktor@conduktor-postgres:5432/conduktor"
+      # CDK_KAFKASQL_DATABASE_URL: "postgresql://conduktor:change_me@kafkasql-postgres:5432/conduktor-sql"
+      # Basic authentication configuration
+      CDK_SECURITY_BASIC_ENABLED: "true"
+      CDK_SECURITY_BASIC_USERNAME: "admin"
+      CDK_SECURITY_BASIC_PASSWORD: "admin"
+      # Organization settings
+      CDK_ORGANIZATION_NAME: "Local Development"
+    volumes:
+      - ./conduktor_data:/var/lib/conduktor
+    depends_on:
+      kafka1:
+        condition: service_healthy
+      kafka2:
+        condition: service_healthy
+      kafka3:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+      conduktor-postgres:
+        condition: service_healthy
+      kafkasql-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: curl --fail http://localhost:8080/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - kafka-net
+
+networks:
+  kafka-net:
+    driver: bridge
