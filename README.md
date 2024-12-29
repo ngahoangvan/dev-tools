@@ -1,4 +1,4 @@
-# My Devtools that have a lot of tools for support development and deployment
+# Devtools that define a lot of tools for supporting development and deployment
 - [x] ELK
 - [x] Kafka
 - [x] LLM
